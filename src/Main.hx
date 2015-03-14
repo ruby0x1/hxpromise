@@ -7,7 +7,6 @@ class Main extends luxe.Game {
 
     override function config(c:luxe.AppConfig) {
 
-        c.has_window = false;
 
         return c;
 
