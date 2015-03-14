@@ -7,12 +7,13 @@ class Main extends luxe.Game {
 
     override function config(c:luxe.AppConfig) {
 
-
         return c;
 
     }
 
     override function ready() {
+
+        Luxe.showConsole(true);
 
         // var a = Promise.resolve('a');
         // var b = Promise.resolve('b');

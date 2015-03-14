@@ -62,7 +62,13 @@ class Promise {
 
     public function then<T,T1>( res:T, ?rej:T1 ) : Promise {
 
-        then_calls.push(cast res);
+        if(res != null) {
+            then_calls.push(cast res);
+        }
+
+        if(rej != null) {
+            error_calls.push(cast rej);
+        }
 
         return Promise.resolve();
 
@@ -70,11 +76,7 @@ class Promise {
 
     public function error<T>( func:T ) : Promise {
 
-        // if(state == rejected) {
-        //     untyped func(value);
-        // } else if(state == pending) {
-            error_calls.push(cast func);
-        // }
+        error_calls.push(cast func);
 
         return Promise.resolve();
 
