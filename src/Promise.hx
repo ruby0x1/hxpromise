@@ -23,6 +23,8 @@ class Promises {
                 promise.impl( promise.onresolve, promise.onreject );
             }
         }
+
+        nodes.splice(0,nodes.length);
     }
 
 }
