@@ -15,24 +15,39 @@ class Main extends luxe.Game {
 
         Luxe.showConsole(true);
 
-        // var a = Promise.resolve('a');
-        // var b = Promise.resolve('b');
+//usage 1
+//resolve, single then
 
-        // var s = Promise.all([a, b]);
+        var u1 = new Promise(
+            function(resolve, reject) {
+                resolve('val');
+            }
+        );
 
-        // s.then(function(v){
-        //     trace(v);
-        // });
+        u1.then(
+            function(val:String) {
+                trace('u1 then: $val');
+            }
+        );
 
-        new Promise(function(resolve, reject) {
-            reject('val');
-        }).then(function(val:String) {
-            trace('then: $val');
-        }).error(function(err) {
-            trace('huh: ' + err);
-        }).then(function(val) {
-            trace('then: always');
-        });
+//usage 2
+//resolve, multiple then
+
+        var u2 = new Promise(
+            function(resolve, reject) {
+                resolve('val');
+            }
+        );
+
+        u2.then(
+            function(val:String) {
+                trace('u2 then: $val');
+            }
+        ).then(
+            function(val:String){
+                trace('u2 then again: $val');
+            }
+        );
 
     } //ready
 
