@@ -1,132 +1,139 @@
 
 
-@:enum
-abstract PromiseState(Int) from Int to Int {
-        //initial state, not fulfilled or rejected
-    var pending = 0;
-        //successful operation
-    var fulfilled = 1;
-        //failed operation
-    var rejected = 2;
+/**
+The Promise interface represents a proxy for a value not necessarily
+known when the promise is created. It allows you to associate handlers
+to an asynchronous action's eventual success or failure. This lets asynchronous
+methods return values like synchronous methods: instead of the final value,
+the asynchronous method returns a promise of having a value at some point in the future.
 
-}
+A pending promise can become either fulfilled with a value, or
+rejected with a reason. When either of these happens, the associated
+handlers queued up by a promise's then method are called. (If the promise
+has already been fulfilled or rejected when a corresponding handler is attached,
+the handler will be called, so there is no race condition between an asynchronous
+operation completing and its handlers being attached.)
 
-@:allow(Promise)
-class Promises {
+As the Promise.prototype.then and Promise.prototype.error methods return promises,
+they can be chained—an operation called composition.
 
-    static var calls: Array<Dynamic> = [];
-    static var defers: Array<{f:Dynamic,a:Dynamic}> = [];
-
-    public static function step() {
-
-        next();
-
-        for(defer in defers) defer.f(defer.a);
-        defers.splice(0,defers.length);
-
-    }
-
-    static function next() {
-        if(calls.length > 0) (calls.shift())();
-    }
-
-    static function defer<T,T1>(f:T, ?a:T1) {
-        if(f == null) return;
-        defers.push({f:f, a:a});
-    }
-
-    static function queue<T>(f:T) {
-        if(f == null) return;
-        calls.push(cast f);
-    }
-
-}
-
-class D {
-    public static function pos( v, pos:haxe.PosInfos ) {
-        // Sys.println(v + ' / ${pos.fileName}:${pos.lineNumber}:(${pos.className}:${pos.methodName})');
-    }
-}
-
-
+Documentation provided mostly by MDN
+licensed under CC-BY-SA 2.5. by Mozilla Contributors.
+https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise
+*/
 @:allow(Promises)
 class Promise {
 
+        //:todo: Not sure if this should be public for convenience
+        /** The state this promise is in. Exposed for convenience only. */
     public var state : PromiseState;
 
-    var impl : Dynamic;
-
+        /** internal: The result of this promise */
     var result : Dynamic;
+        /** internal: The reactions lists */
     var reject_reactions: Array<Dynamic>;
     var fulfill_reactions: Array<Dynamic>;
     var settle_reactions: Array<Dynamic>;
 
-    var tag:String = 'auto';
+        /** Creates a new promise by providing a function with two callback arguments.
+            Inside this function, invoking these callbacks controls the promise state.
 
-    public function new<T>( _tag:String='auto', func:T ) {
+            For example, if fetching a value async, and the operation fails, you would
+            invoke the second callback with the reason/error. If the operation succeeded,
+            you would invoke the first.
+
+            `new Promise(function(resolve, reject) {
+                var success = ... get value ...
+                if(success) {
+                    resolve(value);
+                } else {
+                    reject(Error(...));
+                }
+            });` */
+    public function new<T>( func:T ) {
+
+        state = pending;
 
         reject_reactions = [];
         fulfill_reactions = [];
         settle_reactions = [];
 
-        tag = _tag;
-        state = pending;
-        impl = func;
-
         Promises.queue(function() {
-            impl(onfulfill, onreject);
+            untyped func(onfulfill, onreject);
             Promises.defer(Promises.next);
         });
 
     } //new
 
-    public function then<T,T1>( res:T, ?rej:T ) : Promise {
+        /** The then function returns a Promise. It takes two arguments,
+            both are callback functions for the success and failure cases of the Promise. */
+    public function then<T,T1>( on_fulfilled:T, ?on_rejected:T ) : Promise {
 
-        if(state != pending) {
-            if(state == fulfilled) {
-                Promises.defer(res, result);
+        switch(state) {
+
+            case pending: {
+                add_fulfill(on_fulfilled);
+                add_reject(on_rejected);
+                return new_linked_promise();
+            }
+
+            case fulfilled: {
+                Promises.defer(on_fulfilled, result);
                 return Promise.resolve(result);
-            } else if(state == rejected) {
-                Promises.defer(rej, result);
+            }
+
+            case rejected: {
+                Promises.defer(on_rejected, result);
                 return Promise.reject(result);
             }
-        }
 
-        addfulfill(res);
-        addreject(rej);
-
-        return new_linked_promise();
+        } //switch
 
     } //then
 
-    public function error<T>( func:T ) : Promise {
+        /** The error function returns a Promise and deals with rejected cases only.
+            It behaves the same as calling then(null, on_rejected).*/
+    public function error<T>( on_rejected:T ) : Promise {
 
-        if(state != pending) {
-            if(state == fulfilled) {
+        switch(state) {
+
+            case pending: {
+                add_reject(on_rejected);
+                return new_linked_resolve_empty();
+            }
+
+            case fulfilled: {
                 return Promise.resolve(result);
-            } else if(state == rejected) {
-                Promises.defer(func, result);
+            }
+
+            case rejected: {
+                Promises.defer(on_rejected, result);
                 return Promise.reject(result);
             }
-        }
 
-        addreject(func);
-
-        return new_linked_resolve_empty();
+        } //switch
 
     } //error
 
+        /** The Promise.all(iterable) function returns a promise that
+            resolves when all of the promises in the iterable argument
+            have resolved. The result is passed as an array of values
+            from all the promises.
+            If any of the passed in promises rejects, the all Promise
+            immediately rejects with the value of the promise that rejected,
+            discarding all the other promises whether or not they have resolved. */
     public static function all( _tag='all', list:Array<Promise> ) {
 
-        return new Promise(_tag,function(ok, no) {
+        return new Promise(function(ok, no) {
 
-            var total = list.length;
             var current = 0;
+            var total = list.length;
             var fulfill_result = [];
             var reject_result = null;
             var all_state:PromiseState = pending;
 
-            var singleok = function(val) {
+            var single_ok = function(val) {
+
                 if(all_state != pending) return;
 
                 current++;
@@ -136,58 +143,69 @@ class Promise {
                     all_state = fulfilled;
                     ok(fulfill_result);
                 }
-            } //singleok
 
-            var singleno = function(val) {
+            } //single_ok
+
+            var single_err = function(val) {
+
                 if(all_state != pending) return;
+
                 all_state = rejected;
                 reject_result = val;
                 no(reject_result);
-            }
+
+            } //single_err
 
             for(promise in list) {
-                promise.then(singleok).error(singleno);
+                promise.then(single_ok).error(single_err);
             }
 
         }); //promise
 
     } //all
 
+        /** The Promise.race function returns a promise that
+            resolves or rejects as soon as one of the promises in the
+            list resolves or rejects, with the value or reason from that promise. */
     public static function race( list:Array<Promise> ) {
 
-        return new Promise('race', function(ok,no) {
+        return new Promise(function(ok,no) {
 
             var settled = false;
-            var singleok = function(val) {
+            var single_ok = function(val) {
                 if(settled) return;
                 settled = true;
                 ok(val);
             }
 
-            var singleerr = function(val) {
+            var single_err = function(val) {
                 if(settled) return;
                 settled = true;
                 no(val);
             }
 
             for(promise in list) {
-                promise.then(singleok).error(singleerr);
+                promise.then(single_ok).error(single_err);
             }
         });
 
     } //race
 
+        /** The Promise.reject function returns a Promise object
+            that is rejected with the optional reason. */
     public static function reject<T>( ?reason:T ) {
 
-        return new Promise('auto:rejected', function(ok, no){
+        return new Promise(function(ok, no){
             no(reason);
         });
 
     } //reject
 
+        /** The static Promise.resolve function returns a Promise object
+            that is resolved with the given value. */
     public static function resolve<T>( ?val:T ) {
 
-        return new Promise('auto:resolved', function(ok, no){
+        return new Promise(function(ok, no){
             ok(val);
         });
 
@@ -196,29 +214,30 @@ class Promise {
 //Debug
 
     function toString() {
-        return 'Promise { tag:$tag, state:$state, result:$result }';
+        return 'Promise { state:$state, result:$result }';
     }
 
 //Internal
 
-        //add a settle reaction unless
-        //this promise is already settled,
-        //at which it calls right away
-    function addsettle(f) {
+        /** internal: Add a settle reaction unless
+            this promise is already settled,
+            if it is the call is deferred but happens "immediately" */
+    function add_settle(f) {
+
         if(state == pending) {
             settle_reactions.push(f);
         } else {
             Promises.defer(f,result);
         }
-    }
 
-        //return a new linked promise that
-        //will wait on this one settling and
-        //settle the linked promise with the state
+    } //add_settle
+
+        /** internal: Return a new linked promise that
+            will wait on this, and settle it with this result */
     function new_linked_promise() {
 
-        return new Promise(tag+':link',function(f, r) {
-            addsettle(function(_){
+        return new Promise(function(f, r) {
+            add_settle(function(_){
                 if(state == fulfilled){
                     f(result);
                 } else {
@@ -227,63 +246,72 @@ class Promise {
             });
         }); //promise
 
-    } //new_linked_promise
+    } //
 
 
-        //return an already resolved
-        //promise that will wait on this one
+        /** internal: Return a resolved promise that
+            will wait on this, and fulfill with this result */
     function new_linked_resolve() {
         return new Promise(function (f,r) {
-            addsettle(function(val) {
+            add_settle(function(val) {
                 f(val);
             });
         });
-    }
+    } //
 
-        //return an already resolved
-        //promise that will wait on this one
+        /** internal: Return a rejected promise that
+            will wait on this, and reject with this result */
     function new_linked_reject() {
         return new Promise(function (f,r) {
-            addsettle(function(val){
+            add_settle(function(val){
                 r(val);
             });
         });
-    }
+    } //
 
-        //return an already resolved
-        //promise that will wait on this one
-        //but have no value fulfilled
+        /** internal: Return an already resolved
+            promise that will wait on this one
+            but have no value fulfilled */
     function new_linked_resolve_empty() {
         return new Promise(function(f,r) {
-            addsettle(function(_){
+            add_settle(function(_){
                 f();
             });
         });
-    }
+    } //
 
-        //return an already resolved
-        //promise that will wait on this one
-        //but have no value fulfilled
+        /** internal: Return an already rejected
+            promise that will wait on this one
+            but have no value rejected */
     function new_linked_reject_empty() {
         return new Promise(function(f,r) {
-            addsettle(function(_){
+            add_settle(function(_){
                 r();
             });
         });
-    }
+    } //
 
 
-    function addfulfill<T>(f:T)
-        if(f!=null) fulfill_reactions.push( cast f );
+        /** internal: Add a fulfill reaction callback */
+    function add_fulfill<T>(f:T) {
+        if(f != null) {
+            fulfill_reactions.push(f);
+        }
+    } //
 
-    function addreject<T>(f:T)
-        if(f!=null) reject_reactions.push( cast f );
+        /** internal: Add a reject reaction callback */
+    function add_reject<T>(f:T) {
+        if(f != null) {
+            reject_reactions.push(f);
+        }
+    } //
 
-//Sync management
+//State shifts
 
+        /** internal: Called if the promise is fulfilled. */
     function onfulfill<T,T1>( val:T ) {
 
-        // trace('resolve: $tag, to $val, with ${fulfill_reactions.length} reactions');
+        // trace('resolve: to $val, with ${fulfill_reactions.length} reactions');
 
         state = fulfilled;
         result = val;
@@ -297,9 +325,10 @@ class Promise {
 
     } //onfulfill
 
+        /** internal: Called if the promise is rejected. */
     function onreject<T,T1>( reason:T ) {
 
-        // trace('reject: $tag, to $reason, with ${reject_reactions.length} reactions');
+        // trace('reject: to $reason, with ${reject_reactions.length} reactions');
 
         state = rejected;
         result = reason;
@@ -313,6 +342,7 @@ class Promise {
 
     } //onreject
 
+        /** internal: Called when the promise is settled. */
     function onsettle() {
 
         while(settle_reactions.length > 0) {
@@ -323,4 +353,59 @@ class Promise {
     } //onsettle
 
 } //Promise
+
+
+/**
+Promises implementation. Use this to integrate the promises
+into your code base. Call step at the end of a frame/microtask.
+*/
+@:allow(Promise)
+class Promises {
+
+    static var calls: Array<Dynamic> = [];
+    static var defers: Array<{f:Dynamic,a:Dynamic}> = [];
+
+        /** Call this once when you want to propagate promises */
+    public static function step() {
+
+        next();
+
+        while(defers.length > 0) {
+            var defer = defers.shift();
+                defer.f(defer.a);
+        }
+
+    } //
+
+        /** Handle the next job in the queue if any */
+    static function next() {
+        if(calls.length > 0) (calls.shift())();
+    } //
+
+        /** Defer a call with an argument to the next step */
+    static function defer<T,T1>(f:T, ?a:T1) {
+        if(f == null) return;
+        defers.push({f:f, a:a});
+    } //
+
+        /** Queue a job to be executed in order */
+    static function queue<T>(f:T) {
+        if(f == null) return;
+        calls.push(f);
+    } //
+
+} //Promises
+
+//Promise types
+
+@:enum
+abstract PromiseState(Int) from Int to Int {
+        //initial state, not fulfilled or rejected
+    var pending = 0;
+        //successful operation
+    var fulfilled = 1;
+        //failed operation
+    var rejected = 2;
+
+} //
 

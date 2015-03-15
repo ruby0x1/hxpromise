@@ -16,7 +16,7 @@ class Main extends luxe.Game {
 //usage 1
 //resolve, single then
 
-        var u1 = new Promise('u1',
+        var u1 = new Promise(
             function(resolve, reject) {
                 resolve('u1-val');
             }
@@ -32,7 +32,7 @@ class Main extends luxe.Game {
 //usage 2
 //resolve, multiple then
 
-        var u2 = new Promise('u2',
+        var u2 = new Promise(
             function(resolve, reject) {
                 resolve('u2-val');
             }
@@ -52,7 +52,7 @@ class Main extends luxe.Game {
 //usage 3
 //reject, single catch
 
-        var u3 = new Promise('u3',
+        var u3 = new Promise(
             function(resolve, reject) {
                 reject('u3-val');
             }
@@ -68,7 +68,7 @@ class Main extends luxe.Game {
 //usage 4
 //reject, single then, single catch
 
-        var u4 = new Promise('u4',
+        var u4 = new Promise(
             function(resolve, reject) {
                 reject('u4-val');
             }
@@ -88,7 +88,7 @@ class Main extends luxe.Game {
 //usage 5
 //reject, then and after then, single catch
 
-        var u5 = new Promise('u5',
+        var u5 = new Promise(
             function(resolve, reject) {
                 reject('u5-val');
             }
