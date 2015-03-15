@@ -18,11 +18,12 @@ class Main extends luxe.Game {
 //usage 1
 //resolve, single then
 
-        var u1 = new Promise(
+        var u1 = new Promise('u1',
             function(resolve, reject) {
                 resolve('u1-val');
             }
         );
+        trace(u1);
 
         u1.then(
             function(val:String) {
@@ -33,11 +34,12 @@ class Main extends luxe.Game {
 //usage 2
 //resolve, multiple then
 
-        var u2 = new Promise(
+        var u2 = new Promise('u2',
             function(resolve, reject) {
                 resolve('u2-val');
             }
         );
+        trace(u2);
 
         u2.then(
             function(val:String) {
@@ -52,11 +54,12 @@ class Main extends luxe.Game {
 //usage 3
 //reject, single catch
 
-        var u3 = new Promise(
+        var u3 = new Promise('u3',
             function(resolve, reject) {
                 reject('u3-val');
             }
         );
+        trace(u3);
 
         u3.error(
             function(val:String) {
@@ -67,11 +70,12 @@ class Main extends luxe.Game {
 //usage 4
 //reject, single then, single catch
 
-        var u4 = new Promise(
+        var u4 = new Promise('u4',
             function(resolve, reject) {
                 reject('u4-val');
             }
         );
+        trace(u4);
 
         u4.then(
             function(val:String){
@@ -86,11 +90,12 @@ class Main extends luxe.Game {
 //usage 5
 //reject, then and after then, single catch
 
-        var u5 = new Promise(
+        var u5 = new Promise('u5',
             function(resolve, reject) {
                 reject('u5-val');
             }
         );
+        trace(u5);
 
         u5.then(
             function(val:String){
@@ -111,8 +116,9 @@ class Main extends luxe.Game {
 
         var a = Promise.resolve('a');
         var b = Promise.resolve('b');
-        var u6 = Promise.all([a,b]);
+        var u6 = Promise.all('u6',[a,b]);
 
+        trace(u6);
         u6.then(
             function(vals:Array<String>){
                 trace('u6-vals $vals');

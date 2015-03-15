@@ -14,33 +14,28 @@ abstract PromiseState(Int) from Int to Int {
 @:allow(Promise)
 class Promises {
 
-    static var nodes: Array<Promise> = [];
     static var calls: Array<Dynamic> = [];
+    static var defers: Array<{f:Dynamic,a:Dynamic}> = [];
 
     public static function step() {
 
-        // for(node in nodes) {
-            // node.impl( promise.onresolve, promise.onreject );
-        // }
-
-        for(call in calls) {
-            call();
-        }
+        for(call in calls) call();
+        for(defer in defers) defer.f(defer.a);
 
         calls.splice(0,calls.length);
-        // nodes.splice(0,nodes.length);
+        defers.splice(0,defers.length);
 
     }
 
-    static function queue(f) {
+    static function defer<T,T1>(f:T, a:T1) {
         if(f == null) return;
-        calls.push(f);
+        defers.push({f:f, a:a});
     }
 
-    // static function add(p) {
-    //     if(p == null) return;
-    //     nodes.push(p);
-    // }
+    static function queue<T>(f:T) {
+        if(f == null) return;
+        calls.push(cast f);
+    }
 
 }
 
@@ -73,34 +68,28 @@ class Promise {
         state = pending;
         impl = func;
 
-        Promises.queue( implcall );
+        Promises.queue(function() {
+            impl(onresolve, onreject);
+        });
 
     } //new
 
-    function addok(f) {
-        if(f!=null) fulfill_reactions.push( f );
-        // trace('add ${fulfill_reactions.length}');
-    }
-
-    function addno(f) {
-        if(f!=null) reject_reactions.push( f );
-        // trace('add ${fulfill_reactions.length}');
-    }
-
     public function then<T,T1>( res:T, ?rej:T ) : Promise {
 
-        addok(cast res);
-        addno(cast rej);
-
-        if(state == fulfilled) {
-            trace('then resolves');
-            return Promise.resolve(result);
-        } else if(state == rejected) {
-            trace('then rejects');
-            return Promise.reject(result);
+        if(state != pending) {
+            if(state == fulfilled) {
+                Promises.defer(res, result);
+                return Promise.resolve(result);
+            } else if(state == rejected) {
+                Promises.defer(rej, result);
+                return Promise.reject(result);
+            }
         }
 
-        return new Promise(function(ok,no){
+        addfulfill(res);
+        addreject(rej);
+
+        return new Promise('then', function(ok,no){
             if(state == fulfilled) {
                 ok(result);
             } else if(state == rejected) {
@@ -112,44 +101,48 @@ class Promise {
 
     public function error<T>( func:T ) : Promise {
 
-        addno(cast func);
-
-        if(state == fulfilled) {
-            return Promise.resolve(result);
-        } else if(state == rejected) {
-            return Promise.reject(result);
+        if(state != pending) {
+            if(state == fulfilled) {
+                return Promise.resolve(result);
+            } else if(state == rejected) {
+                Promises.defer(func, result);
+                return Promise.reject(result);
+            }
         }
 
-        return new Promise(function(ok,no){
-            ok();
-        });
+        addreject(func);
+
+        return Promise.resolve();
 
     } //error
 
-    public static function all( list:Array<Promise> ) {
+    public static function all( _tag='all', list:Array<Promise> ) {
 
-        return new Promise('all',function(ok, no) {
-            trace('all');
+        return new Promise(_tag,function(ok, no) {
 
             var total = list.length;
             var current = 0;
-            var results = [];
-            var settled = false;
+            var fulfill_result = [];
+            var reject_result = null;
+            var all_state:PromiseState = pending;
 
             var singleok = function(val) {
-                if(settled) return;
-                trace('$current / $total');
+                if(all_state != pending) return;
+
                 current++;
-                results.push(val);
+                fulfill_result.push(val);
+
                 if(total == current) {
-                    settled = true;
-                    ok(results);
+                    all_state = fulfilled;
+                    ok(fulfill_result);
                 }
-            }
+            } //singleok
 
             var singleno = function(val) {
-                settled = true;
-                no(val);
+                if(all_state != pending) return;
+                all_state = rejected;
+                reject_result = val;
+                no(reject_result);
             }
 
             for(promise in list) {
@@ -206,22 +199,24 @@ class Promise {
         return 'Promise { tag:$tag, state:$state, result:$result }';
     }
 
-//Sync management
+//Internal
 
-    function implcall() {
-        impl(onresolve, onreject);
-    }
+    function addfulfill<T>(f:T)
+        if(f!=null) fulfill_reactions.push( cast f );
+
+    function addreject<T>(f:T)
+        if(f!=null) reject_reactions.push( cast f );
+
+//Sync management
 
     function onresolve<T,T1>( val:T ) {
 
-        trace('resolve: $tag, to $val, with ${fulfill_reactions.length} reactions');
+        // trace('resolve: $tag, to $val, with ${fulfill_reactions.length} reactions');
 
         state = fulfilled;
         result = val;
 
-        for(f in fulfill_reactions) {
-            f(result);
-        }
+        for(f in fulfill_reactions) f(result);
 
     } //onresolve
 
@@ -232,9 +227,7 @@ class Promise {
         state = rejected;
         result = reason;
 
-        for(f in reject_reactions) {
-            f(result);
-        }
+        for(f in reject_reactions) f(result);
 
     } //onreject
 
