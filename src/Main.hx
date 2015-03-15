@@ -20,7 +20,7 @@ class Main extends luxe.Game {
 
         var u1 = new Promise(
             function(resolve, reject) {
-                resolve('val');
+                resolve('u1-val');
             }
         );
 
@@ -35,7 +35,7 @@ class Main extends luxe.Game {
 
         var u2 = new Promise(
             function(resolve, reject) {
-                resolve('val');
+                resolve('u2-val');
             }
         );
 
@@ -46,6 +46,76 @@ class Main extends luxe.Game {
         ).then(
             function(val:String){
                 trace('u2 then again: $val');
+            }
+        );
+
+//usage 3
+//reject, single catch
+
+        var u3 = new Promise(
+            function(resolve, reject) {
+                reject('u3-val');
+            }
+        );
+
+        u3.error(
+            function(val:String) {
+                trace('u3 catch: $val');
+            }
+        );
+
+//usage 4
+//reject, single then, single catch
+
+        var u4 = new Promise(
+            function(resolve, reject) {
+                reject('u4-val');
+            }
+        );
+
+        u4.then(
+            function(val:String){
+                trace('u4');
+            }
+        ).error(
+            function(reason:String) {
+                trace('u4 catch: $reason');
+            }
+        );
+
+//usage 5
+//reject, then and after then, single catch
+
+        var u5 = new Promise(
+            function(resolve, reject) {
+                reject('u5-val');
+            }
+        );
+
+        u5.then(
+            function(val:String){
+                trace('u5-val');
+            }
+        ).error(
+            function(reason:String) {
+                trace('u5 catch: $reason');
+            }
+        ).then(
+            function() {
+                trace('u5 always');
+            }
+        );
+
+//usage 6
+//basic all
+
+        var a = Promise.resolve('a');
+        var b = Promise.resolve('b');
+        var u6 = Promise.all([a,b]);
+
+        u6.then(
+            function(vals:Array<String>){
+                trace('u6-vals $vals');
             }
         );
 

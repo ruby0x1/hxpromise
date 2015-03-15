@@ -11,21 +11,36 @@ abstract PromiseState(Int) from Int to Int {
 
 }
 
+@:allow(Promise)
 class Promises {
 
-    @:allow(Promise)
     static var nodes: Array<Promise> = [];
+    static var calls: Array<Dynamic> = [];
 
     public static function step() {
-        for(promise in nodes) {
-            if(promise.impl != null) {
-                trace('step on ${promise.tag}');
-                promise.impl( promise.onresolve, promise.onreject );
-            }
+
+        // for(node in nodes) {
+            // node.impl( promise.onresolve, promise.onreject );
+        // }
+
+        for(call in calls) {
+            call();
         }
 
-        nodes.splice(0,nodes.length);
+        calls.splice(0,calls.length);
+        // nodes.splice(0,nodes.length);
+
     }
+
+    static function queue(f) {
+        if(f == null) return;
+        calls.push(f);
+    }
+
+    // static function add(p) {
+    //     if(p == null) return;
+    //     nodes.push(p);
+    // }
 
 }
 
@@ -35,72 +50,110 @@ class D {
     }
 }
 
+
 @:allow(Promises)
 class Promise {
 
     public var state : PromiseState;
 
     var impl : Dynamic;
-    var value : Dynamic;
 
-    var error_calls : Array<Dynamic>;
-    var then_calls : Array<Dynamic>;
+    var result : Dynamic;
+    var reject_reactions: Array<Dynamic>;
+    var fulfill_reactions: Array<Dynamic>;
+
     var tag:String = 'auto';
 
     public function new<T>( _tag:String='auto', func:T ) {
 
-        error_calls = [];
-        then_calls = [];
+        reject_reactions = [];
+        fulfill_reactions = [];
 
         tag = _tag;
         state = pending;
         impl = func;
 
-        Promises.nodes.push(this);
+        Promises.queue( implcall );
 
     } //new
 
-    public function then<T,T1>( res:T, ?rej:T1 ) : Promise {
+    function addok(f) {
+        if(f!=null) fulfill_reactions.push( f );
+        // trace('add ${fulfill_reactions.length}');
+    }
 
-        if(res != null) {
-            then_calls.push(cast res);
+    function addno(f) {
+        if(f!=null) reject_reactions.push( f );
+        // trace('add ${fulfill_reactions.length}');
+    }
+
+    public function then<T,T1>( res:T, ?rej:T ) : Promise {
+
+        addok(cast res);
+        addno(cast rej);
+
+        if(state == fulfilled) {
+            trace('then resolves');
+            return Promise.resolve(result);
+        } else if(state == rejected) {
+            trace('then rejects');
+            return Promise.reject(result);
         }
 
-        if(rej != null) {
-            error_calls.push(cast rej);
-        }
-
-        return Promise.resolve();
+        return new Promise(function(ok,no){
+            if(state == fulfilled) {
+                ok(result);
+            } else if(state == rejected) {
+                no(result);
+            }
+        });
 
     } //then
 
     public function error<T>( func:T ) : Promise {
 
-        error_calls.push(cast func);
+        addno(cast func);
 
-        return Promise.resolve();
+        if(state == fulfilled) {
+            return Promise.resolve(result);
+        } else if(state == rejected) {
+            return Promise.reject(result);
+        }
+
+        return new Promise(function(ok,no){
+            ok();
+        });
 
     } //error
 
     public static function all( list:Array<Promise> ) {
 
         return new Promise('all',function(ok, no) {
+            trace('all');
 
             var total = list.length;
             var current = 0;
             var results = [];
+            var settled = false;
 
-            var single = function(val) {
+            var singleok = function(val) {
+                if(settled) return;
                 trace('$current / $total');
                 current++;
                 results.push(val);
                 if(total == current) {
+                    settled = true;
                     ok(results);
                 }
             }
 
+            var singleno = function(val) {
+                settled = true;
+                no(val);
+            }
+
             for(promise in list) {
-                promise.then(single).error(no);
+                promise.then(singleok).error(singleno);
             }
 
         }); //promise
@@ -108,6 +161,26 @@ class Promise {
     } //all
 
     public static function race( list:Array<Promise> ) {
+
+        return new Promise('race', function(ok,no) {
+
+            var settled = false;
+            var singleok = function(val) {
+                if(settled) return;
+                settled = true;
+                ok(val);
+            }
+
+            var singleerr = function(val) {
+                if(settled) return;
+                settled = true;
+                no(val);
+            }
+
+            for(promise in list) {
+                promise.then(singleok).error(singleerr);
+            }
+        });
 
     } //race
 
@@ -130,40 +203,38 @@ class Promise {
 //Debug
 
     function toString() {
-        return 'Promise { tag:$tag, state:$state, value:$value }';
+        return 'Promise { tag:$tag, state:$state, result:$result }';
     }
 
 //Sync management
 
-    @:allow(Promises)
+    function implcall() {
+        impl(onresolve, onreject);
+    }
+
     function onresolve<T,T1>( val:T ) {
 
-        trace('resolve: $tag, ${then_calls.length} thens, to $val');
+        trace('resolve: $tag, to $val, with ${fulfill_reactions.length} reactions');
 
         state = fulfilled;
-        value = val;
+        result = val;
 
-        for(t in then_calls) {
-            t(value);
+        for(f in fulfill_reactions) {
+            f(result);
         }
-
-        return null;
 
     } //onresolve
 
-    @:allow(Promises)
     function onreject<T,T1>( reason:T ) {
 
-        trace('reject: $tag');
+        // trace('reject: $tag, to $reason, with ${reject_reactions.length} reactions');
 
         state = rejected;
-        value = reason;
+        result = reason;
 
-        for(e in error_calls) {
-            e(reason);
+        for(f in reject_reactions) {
+            f(result);
         }
-
-        return null;
 
     } //onreject
 
