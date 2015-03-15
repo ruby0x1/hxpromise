@@ -6,9 +6,7 @@ import Promise;
 class Main extends luxe.Game {
 
     override function config(c:luxe.AppConfig) {
-
         return c;
-
     }
 
     override function ready() {
@@ -109,6 +107,10 @@ class Main extends luxe.Game {
             function() {
                 trace('u5 always');
             }
+        ).then(
+            function() {
+                trace('u5 always2');
+            }
         );
 
 //usage 6
@@ -138,10 +140,13 @@ class Main extends luxe.Game {
             function(vals:Array<String>){
                 trace('u7-vals $vals');
             }
-        );
-        u7.error(
+        ).error(
             function(rejected){
                 trace('u7-error: $rejected');
+            }
+        ).then(
+            function(none){
+                trace('u7-always: $none');
             }
         );
 

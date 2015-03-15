@@ -59,6 +59,7 @@ class Promise {
     var result : Dynamic;
     var reject_reactions: Array<Dynamic>;
     var fulfill_reactions: Array<Dynamic>;
+    var settle_reactions: Array<Dynamic>;
 
     var tag:String = 'auto';
 
@@ -66,13 +67,14 @@ class Promise {
 
         reject_reactions = [];
         fulfill_reactions = [];
+        settle_reactions = [];
 
         tag = _tag;
         state = pending;
         impl = func;
 
         Promises.queue(function() {
-            impl(onresolve, onreject);
+            impl(onfulfill, onreject);
             Promises.defer(Promises.next);
         });
 
@@ -93,13 +95,7 @@ class Promise {
         addfulfill(res);
         addreject(rej);
 
-        return new Promise('then', function(ok,no){
-            if(state == fulfilled) {
-                ok(result);
-            } else if(state == rejected) {
-                no(result);
-            }
-        });
+        return new_linked_promise();
 
     } //then
 
@@ -116,7 +112,7 @@ class Promise {
 
         addreject(func);
 
-        return Promise.resolve();
+        return new_linked_resolve_empty();
 
     } //error
 
@@ -205,6 +201,78 @@ class Promise {
 
 //Internal
 
+        //add a settle reaction unless
+        //this promise is already settled,
+        //at which it calls right away
+    function addsettle(f) {
+        if(state == pending) {
+            settle_reactions.push(f);
+        } else {
+            Promises.defer(f,result);
+        }
+    }
+
+        //return a new linked promise that
+        //will wait on this one settling and
+        //settle the linked promise with the state
+    function new_linked_promise() {
+
+        return new Promise(tag+':link',function(f, r) {
+            addsettle(function(_){
+                if(state == fulfilled){
+                    f(result);
+                } else {
+                    r(result);
+                }
+            });
+        }); //promise
+
+    } //new_linked_promise
+
+
+        //return an already resolved
+        //promise that will wait on this one
+    function new_linked_resolve() {
+        return new Promise(function (f,r) {
+            addsettle(function(val) {
+                f(val);
+            });
+        });
+    }
+
+        //return an already resolved
+        //promise that will wait on this one
+    function new_linked_reject() {
+        return new Promise(function (f,r) {
+            addsettle(function(val){
+                r(val);
+            });
+        });
+    }
+
+        //return an already resolved
+        //promise that will wait on this one
+        //but have no value fulfilled
+    function new_linked_resolve_empty() {
+        return new Promise(function(f,r) {
+            addsettle(function(_){
+                f();
+            });
+        });
+    }
+
+        //return an already resolved
+        //promise that will wait on this one
+        //but have no value fulfilled
+    function new_linked_reject_empty() {
+        return new Promise(function(f,r) {
+            addsettle(function(_){
+                r();
+            });
+        });
+    }
+
+
     function addfulfill<T>(f:T)
         if(f!=null) fulfill_reactions.push( cast f );
 
@@ -213,16 +281,21 @@ class Promise {
 
 //Sync management
 
-    function onresolve<T,T1>( val:T ) {
+    function onfulfill<T,T1>( val:T ) {
 
         // trace('resolve: $tag, to $val, with ${fulfill_reactions.length} reactions');
 
         state = fulfilled;
         result = val;
 
-        for(f in fulfill_reactions) f(result);
+        while(fulfill_reactions.length > 0) {
+            var fn = fulfill_reactions.shift();
+            fn(result);
+        }
 
-    } //onresolve
+        onsettle();
+
+    } //onfulfill
 
     function onreject<T,T1>( reason:T ) {
 
@@ -231,9 +304,23 @@ class Promise {
         state = rejected;
         result = reason;
 
-        for(f in reject_reactions) f(result);
+        while(reject_reactions.length > 0) {
+            var fn = reject_reactions.shift();
+            fn(result);
+        }
+
+        onsettle();
 
     } //onreject
+
+    function onsettle() {
+
+        while(settle_reactions.length > 0) {
+            var fn = settle_reactions.shift();
+            fn(result);
+        }
+
+    } //onsettle
 
 } //Promise
 
