@@ -125,6 +125,26 @@ class Main extends luxe.Game {
             }
         );
 
+//usage 7
+//basic all reject
+
+        var a = Promise.resolve('a');
+        var b = Promise.reject('b');
+        var c = Promise.resolve('c');
+        var u7 = Promise.all('u7',[a,b,c]);
+
+        trace(u7);
+        u7.then(
+            function(vals:Array<String>){
+                trace('u7-vals $vals');
+            }
+        );
+        u7.error(
+            function(rejected){
+                trace('u7-error: $rejected');
+            }
+        );
+
     } //ready
 
     override function onkeyup( e:KeyEvent ) {

@@ -19,15 +19,18 @@ class Promises {
 
     public static function step() {
 
-        for(call in calls) call();
-        for(defer in defers) defer.f(defer.a);
+        next();
 
-        calls.splice(0,calls.length);
+        for(defer in defers) defer.f(defer.a);
         defers.splice(0,defers.length);
 
     }
 
-    static function defer<T,T1>(f:T, a:T1) {
+    static function next() {
+        if(calls.length > 0) (calls.shift())();
+    }
+
+    static function defer<T,T1>(f:T, ?a:T1) {
         if(f == null) return;
         defers.push({f:f, a:a});
     }
@@ -70,6 +73,7 @@ class Promise {
 
         Promises.queue(function() {
             impl(onresolve, onreject);
+            Promises.defer(Promises.next);
         });
 
     } //new
