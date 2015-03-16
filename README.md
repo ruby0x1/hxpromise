@@ -9,3 +9,7 @@ Documentation can be found in the code file, but mirrors the documentation from 
 
 - `catch` function is called `error`. catch is a keyword in Haxe.
 - `resolve` doesn't chain if the value handed in is a promise (:todo: 1.1.0)
+
+## todo
+- Externs for js Promise to use native type.
+    - This isn't widely supported in major browsers yet.

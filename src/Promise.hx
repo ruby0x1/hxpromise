@@ -1,5 +1,4 @@
 
-
 /**
 The Promise interface represents a proxy for a value not necessarily
 known when the promise is created. It allows you to associate handlers
@@ -24,9 +23,8 @@ https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects
 @:allow(Promises)
 class Promise {
 
-        /** The state this promise is in. Exposed for convenience only. */
-    public var state : PromiseState;
-
+        /** The state this promise is in. */
+    var state : PromiseState;
         /** internal: The result of this promise */
     var result : Dynamic;
         /** internal: The reactions lists */
@@ -407,4 +405,3 @@ abstract PromiseState(Int) from Int to Int {
     var rejected = 2;
 
 } //
-
