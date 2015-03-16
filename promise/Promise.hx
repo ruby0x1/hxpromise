@@ -1,3 +1,4 @@
+package promise;
 
 /**
 The Promise interface represents a proxy for a value not necessarily

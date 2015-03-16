@@ -1,12 +1,7 @@
 */.DS_Store
 .DS_Store
 .DS_Store?
-*/thumbs.db
-thumbs.db
-.thumbs.db?
-obj/
-builds/
+*/Thumbs.db
+Thumbs.db
+.Thumbs.db?
 bin/
-users/
-ios.project
-*.xcuserstate

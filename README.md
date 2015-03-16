@@ -13,3 +13,5 @@ Documentation can be found in the code file, but mirrors the documentation from 
 ## todo
 - Externs for js Promise to use native type.
     - This isn't widely supported in major browsers yet.
+- Test more targets (tested: cpp, js, neko)
+    - Just basic haxe functions, so should work elsewhere
