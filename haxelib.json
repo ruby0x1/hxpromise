@@ -1,0 +1,10 @@
+{
+  "name": "hxpromise",
+  "url" : "https://github.com/underscorediscovery/hxpromise/",
+  "license": "MIT",
+  "tags": ["cross","promise","promises","es6"],
+  "description": "An es6 based Promise implementation for Haxe.",
+  "version": "1.0.0",
+  "releasenote": "1.0.0 - initial release",
+  "contributors": ["underscorediscovery"]
+}
