@@ -24,7 +24,6 @@ https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects
 @:allow(Promises)
 class Promise {
 
-        //:todo: Not sure if this should be public for convenience
         /** The state this promise is in. Exposed for convenience only. */
     public var state : PromiseState;
 
