@@ -21,7 +21,7 @@ Documentation provided mostly by MDN
 licensed under CC-BY-SA 2.5. by Mozilla Contributors.
 https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise
 */
-@:allow(Promises)
+@:allow(promise.Promises)
 class Promise {
 
         /** The state this promise is in. */
@@ -32,6 +32,9 @@ class Promise {
     var reject_reactions: Array<Dynamic>;
     var fulfill_reactions: Array<Dynamic>;
     var settle_reactions: Array<Dynamic>;
+
+        /** internal: If the promise was handled by a reject reaction */
+    var was_caught: Bool = false;
 
         /** Creates a new promise by providing a function with two callback arguments.
             Inside this function, invoking these callbacks controls the promise state.
@@ -57,7 +60,13 @@ class Promise {
         settle_reactions = [];
 
         Promises.queue(function() {
-            untyped func(onfulfill, onreject);
+
+            try {
+                untyped func(onfulfill, onreject);
+            } catch(err:Dynamic) {
+                onexception(err);
+            }
+
             Promises.defer(Promises.next);
         });
 
@@ -212,7 +221,7 @@ class Promise {
 //Debug
 
     function toString() {
-        return 'Promise { state:$state, result:$result }';
+        return 'Promise { state:${state_string()}, result:$result }';
     }
 
 //Internal
@@ -300,6 +309,7 @@ class Promise {
         /** internal: Add a reject reaction callback */
     function add_reject<T>(f:T) {
         if(f != null) {
+            was_caught = true;
             reject_reactions.push(f);
         }
     } //
@@ -307,7 +317,7 @@ class Promise {
 //State shifts
 
         /** internal: Called if the promise is fulfilled. */
-    function onfulfill<T,T1>( val:T ) {
+    function onfulfill<T>( val:T ) {
 
         // trace('resolve: to $val, with ${fulfill_reactions.length} reactions');
 
@@ -324,7 +334,7 @@ class Promise {
     } //onfulfill
 
         /** internal: Called if the promise is rejected. */
-    function onreject<T,T1>( reason:T ) {
+    function onreject<T>( reason:T ) {
 
         // trace('reject: to $reason, with ${reject_reactions.length} reactions');
 
@@ -350,6 +360,39 @@ class Promise {
 
     } //onsettle
 
+        /** internal: Handle exceptions in the promise callback.
+            This causes a rejection, and if no handlers are found will throw */
+    function onexception<T>( err:T ) {
+
+        #if !hxpromise_no_throw_unhandled_rejection
+
+        add_settle(function(_){
+            if(!was_caught) {
+                throw Error.UnhandledPromiseRejection(this.toString());
+                return;
+            }
+        });
+
+        #end //hxpromise_throw_unhandled_rejection
+
+            //state can't transition
+            //and we shouldn't reject twice
+            //so we only reject if pending
+        if(state == pending) {
+            onreject(err);
+        }
+
+    } //onexception
+
+        /** internal: return a string for our state */
+    function state_string() {
+        return switch(state){
+            case pending:'pending';
+            case fulfilled:'fulfilled';
+            case rejected:'rejected';
+        }
+    }
+
 } //Promise
 
 
@@ -357,7 +400,7 @@ class Promise {
 Promises implementation. Use this to integrate the promises
 into your code base. Call step at the end of a frame/microtask.
 */
-@:allow(Promise)
+@:allow(promise.Promise)
 class Promises {
 
     static var calls: Array<Dynamic> = [];
@@ -395,6 +438,10 @@ class Promises {
 } //Promises
 
 //Promise types
+
+enum Error {
+    UnhandledPromiseRejection(err:Dynamic);
+}
 
 @:enum
 abstract PromiseState(Int) from Int to Int {

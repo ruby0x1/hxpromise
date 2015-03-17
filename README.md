@@ -5,6 +5,13 @@ An ES6 based [Promise](https://developer.mozilla.org/en-US/docs/Web/JavaScript/R
 
 Documentation can be found in the code file, but mirrors the documentation from [MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise), licensed under CC-BY-SA 2.5. by Mozilla Contributors.
 
+## Examples
+
+## flags/defines
+
+- `hxpromise_no_throw_unhandled_rejection`
+    - define this to prevent unhandled rejections from calling `throw`
+
 ## Differences from spec
 
 - `catch` function is called `error`. catch is a keyword in Haxe.
