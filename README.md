@@ -60,12 +60,13 @@ MIT. See LICENSE.md
 ## Differences from spec
 
 - `catch` function is called `error`. catch is a keyword in Haxe.
-- No event loop implicit. Call `Promises.step` to propagate.
+- No event loop internally. Call `Promises.step` to propagate.
     - You must call it somewhere. This library will not try to guess your intent.
     - Call once per frame, or multiple times per "microtask" if you want
     - `Promises` instead of `Promise` for user facing API, as the step is "internal" almost.
 - `throw`/exceptions are not spec based
     - exceptions thrown in a promise body will reject the promise
+        - but only if hxpromise_catch_and_reject_on_promise_body is defined
     - exceptions not handled with `error` will bubble to the next frame and throw
         - (this can be disabled, but not a good idea, since ghost exceptions are awful)
         - `hxpromise_dont_throw_unhandled_rejection`
