@@ -11,13 +11,15 @@ See [Examples.hx](https://github.com/underscorediscovery/hxpromise/blob/master/t
 See also: [es6 promises tutorial](http://www.html5rocks.com/en/tutorials/es6/promises/)
 
 ```haxe
-new Promise(
+var get = new Promise(
     function(resolve, reject) {
         //call one or the other, not both
         //reject('uh oh');
         //resolve('u5-val');
     }
-).then(
+);
+
+get.then(
     function(val:String){
         //if success
         trace('u5-val');
