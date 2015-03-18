@@ -7,9 +7,37 @@ Documentation can be found in the code file, but mirrors the documentation from 
 
 ## Examples
 
+See [Examples.hx](https://github.com/underscorediscovery/hxpromise/blob/master/tests/Example.hx)
+See also: [es6 promises tutorial](http://www.html5rocks.com/en/tutorials/es6/promises/)
+
+```haxe
+new Promise(
+    function(resolve, reject) {
+        //call one or the other, not both
+        //reject('uh oh');
+        //resolve('u5-val');
+    }
+).then(
+    function(val:String){
+        //if success
+        trace('u5-val');
+    }
+).error(
+    function(reason:String) {
+        //if failure
+        trace('u5 catch: $reason');
+    }
+).then(
+    function() {
+        //no matter what the state was
+        trace('u5 always');
+    }
+)
+```
+
 ## flags/defines
 
-- `hxpromise_no_throw_unhandled_rejection`
+- `hxpromise_dont_throw_unhandled_rejection`
     - define this to prevent unhandled rejections from calling `throw`
 
 ## Differences from spec
@@ -23,6 +51,7 @@ Documentation can be found in the code file, but mirrors the documentation from 
     - exceptions thrown in a promise body will reject the promise
     - exceptions not handled with `error` will bubble to the next frame and throw
         - (this can be disabled, but not a good idea, since ghost exceptions are awful)
+        - `hxpromise_dont_throw_unhandled_rejection`
     - exceptions thrown in `error` will not be captured and throw properly
     - there is no connection between promises by proximity
         - (i.e nesting promises by scope alone means nothing, as in the spec)

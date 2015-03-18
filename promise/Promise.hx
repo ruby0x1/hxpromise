@@ -364,7 +364,7 @@ class Promise {
             This causes a rejection, and if no handlers are found will throw */
     function onexception<T>( err:T ) {
 
-        #if !hxpromise_no_throw_unhandled_rejection
+        #if !hxpromise_dont_throw_unhandled_rejection
 
         add_settle(function(_){
             if(!was_caught) {
