@@ -1,6 +1,6 @@
 # hxpromise
 
-An ES6 based [Promise](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise
+An ES6 _based_ [Promise](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise
 ) library for [Haxe](http://haxe.org).
 
 Documentation can be found in the code file, but mirrors the documentation from [MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise), licensed under CC-BY-SA 2.5. by Mozilla Contributors.
