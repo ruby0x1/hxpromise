@@ -41,6 +41,9 @@ get.then(
 
 - `hxpromise_dont_throw_unhandled_rejection`
     - define this to prevent unhandled rejections from calling `throw`
+- `hxpromise_catch_and_reject_on_promise_body`
+    - define this to wrap the call of the promise in a try block, the resulting catch will reject the promise.
+    - take note that if you do this - and don't use .error, you can miss exceptions and have no relevant stack.
 
 ## Goals
 

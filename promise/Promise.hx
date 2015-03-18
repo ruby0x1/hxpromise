@@ -61,11 +61,15 @@ class Promise {
 
         Promises.queue(function() {
 
+            #if hxpromise_catch_and_reject_on_promise_body
             try {
                 untyped func(onfulfill, onreject);
             } catch(err:Dynamic) {
                 onexception(err);
             }
+            #else
+                untyped func(onfulfill, onreject);
+            #end //hxpromise_catch_and_reject_on_promise_body
 
             Promises.defer(Promises.next);
         });
@@ -368,8 +372,10 @@ class Promise {
 
         add_settle(function(_){
             if(!was_caught) {
-                throw PromiseError.UnhandledPromiseRejection(this.toString());
-                return;
+                if(state == rejected) {
+                    throw PromiseError.UnhandledPromiseRejection(this.toString());
+                    return;
+                }
             }
         });
 
