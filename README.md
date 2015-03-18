@@ -15,10 +15,23 @@ Documentation can be found in the code file, but mirrors the documentation from 
 ## Differences from spec
 
 - `catch` function is called `error`. catch is a keyword in Haxe.
+- No event loop implicit. Call `Promises.step` to propagate.
+    - You must call it somewhere. This library will not try to guess your intent.
+    - Call once per frame, or multiple times per "microtask" if you want
+    - `Promises` instead of `Promise` for user facing API, as the step is "internal" almost.
+- `throw`/exceptions are not spec based:
+    - exceptions thrown in a promise body will reject the promise
+    - exceptions not handled with `error` will bubble to the next frame and throw
+        - (this can be disabled, but not a good idea, since ghost exceptions are awful)
+    - exceptions thrown in `error` will not be captured and throw properly
+    - there is no connection between promises by proximity
+        - (i.e nesting promises by scope alone means nothing, as in the spec)
+
 - `resolve` doesn't chain if the value handed in is a promise (:todo: 1.1.0)
 
 ## todo
 - Externs for js Promise to use native type.
     - This isn't widely supported in major browsers yet.
+- Tests: will add more tests in an automated form soon
 - Test more targets (tested: cpp, js, neko)
     - Just basic haxe functions, so should work elsewhere
