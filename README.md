@@ -42,6 +42,18 @@ get.then(
 - `hxpromise_dont_throw_unhandled_rejection`
     - define this to prevent unhandled rejections from calling `throw`
 
+## Goals
+
+- es6 spec based
+- light weight
+- no dependency
+- single file / drop in and use elsewhere
+- no hijinx/complexity debt
+
+## License
+
+MIT. See LICENSE.md
+
 ## Differences from spec
 
 - `catch` function is called `error`. catch is a keyword in Haxe.
@@ -49,7 +61,7 @@ get.then(
     - You must call it somewhere. This library will not try to guess your intent.
     - Call once per frame, or multiple times per "microtask" if you want
     - `Promises` instead of `Promise` for user facing API, as the step is "internal" almost.
-- `throw`/exceptions are not spec based:
+- `throw`/exceptions are not spec based
     - exceptions thrown in a promise body will reject the promise
     - exceptions not handled with `error` will bubble to the next frame and throw
         - (this can be disabled, but not a good idea, since ghost exceptions are awful)
@@ -66,3 +78,12 @@ get.then(
 - Tests: will add more tests in an automated form soon
 - Test more targets (tested: cpp, js, neko)
     - Just basic haxe functions, so should work elsewhere
+
+
+##History
+
+0.1.0 - Dev
+
+* initial implementation
+
+

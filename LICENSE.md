@@ -1,3 +1,8 @@
+
+Code documentation provided mostly by MDN
+licensed under CC-BY-SA 2.5. by Mozilla Contributors.
+https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise
+
 The MIT License (MIT)
 
 Copyright (c) 2015 Sven Bergström
