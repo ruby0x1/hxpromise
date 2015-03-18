@@ -368,7 +368,7 @@ class Promise {
 
         add_settle(function(_){
             if(!was_caught) {
-                throw Error.UnhandledPromiseRejection(this.toString());
+                throw PromiseError.UnhandledPromiseRejection(this.toString());
                 return;
             }
         });
@@ -439,7 +439,7 @@ class Promises {
 
 //Promise types
 
-enum Error {
+enum PromiseError {
     UnhandledPromiseRejection(err:Dynamic);
 }
 
