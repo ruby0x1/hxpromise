@@ -5,6 +5,14 @@ An ES6 _based_ [Promise](https://developer.mozilla.org/en-US/docs/Web/JavaScript
 
 Documentation can be found in the code file, but mirrors the documentation from [MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise), licensed under CC-BY-SA 2.5. by Mozilla Contributors.
 
+## Active development
+
+Please note this library is usable but needs more testing,
+potentially more error handling features, potentially some changes
+in how the queue is fulfilled (macro vs micro tasks) and so on.
+
+Feedback and testing appreciated, and some issues are already filed.
+
 ## Examples
 
 See [Examples.hx](https://github.com/underscorediscovery/hxpromise/blob/master/tests/Example.hx)
