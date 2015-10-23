@@ -62,11 +62,11 @@ class Promise {
         Promises.queue(function() {
 
             #if hxpromise_catch_and_reject_on_promise_body
-            try {
-                untyped func(onfulfill, onreject);
-            } catch(err:Dynamic) {
-                onexception(err);
-            }
+                try {
+                    untyped func(onfulfill, onreject);
+                } catch(err:Dynamic) {
+                    onexception(err);
+                }
             #else
                 untyped func(onfulfill, onreject);
             #end //hxpromise_catch_and_reject_on_promise_body
@@ -133,7 +133,13 @@ class Promise {
             If any of the passed in promises rejects, the all Promise
             immediately rejects with the value of the promise that rejected,
             discarding all the other promises whether or not they have resolved. */
-    public static function all( _tag='all', list:Array<Promise> ) {
+    public static function all( list:Array<Promise> ) {
+
+        #if debug
+            for(item in list) {
+                if(item == null) throw "Promise.all handed an array with null items within it";
+            }
+        #end
 
         return new Promise(function(ok, no) {
 
@@ -143,12 +149,12 @@ class Promise {
             var reject_result = null;
             var all_state:PromiseState = pending;
 
-            var single_ok = function(val) {
+            var single_ok = function(index, val) {
 
                 if(all_state != pending) return;
 
                 current++;
-                fulfill_result.push(val);
+                fulfill_result[index] = val;
 
                 if(total == current) {
                     all_state = fulfilled;
@@ -167,8 +173,10 @@ class Promise {
 
             } //single_err
 
+            var index = 0;
             for(promise in list) {
-                promise.then(single_ok).error(single_err);
+                promise.then(single_ok.bind(index,_)).error(single_err);
+                index++;
             }
 
         }); //promise

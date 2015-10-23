@@ -1,0 +1,6 @@
+-main Example.hx
+-cpp cpp/
+-cp ../
+-debug
+-D hxpromise_catch_and_reject_on_promise_body
+# -cmd cpp/Example-debug
